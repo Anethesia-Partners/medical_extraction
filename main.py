@@ -58,4 +58,7 @@ nam_nl = 0
 block_markers = ['<START>', 'ENCOUNTER', 'PATIENT', 'GUARANTOR', 'COVERAGE']
 breaking_phrase = 'QUAD CITIES'
 patient_list = get_patients(full_body,block_markers,breaking_phrase)
-print(compile_dataframe(patient_list))
+fin_df = compile_dataframe(patient_list)
+fin_df.to_excel("./output_fin.xlsx")
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    print(fin_df)
