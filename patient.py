@@ -1,25 +1,33 @@
+import numpy as np
 
 class Patient:
-    def __init__(self):
+    def __init__(self,block_markers):
+        self.fields = {'Encounter Date', 'Hospital Account', 'MRN', 'Guarantor', 'Contact Serial #', 'Name', 'Address','City',
+                    'Primary Care Provider','DOB','Sex','Race','Primary Phone','Relation to Patient','Guarantor ID','Guarantor Employer',
+                    'Status','Home Phone','Patient Class','Hospital Service','Unit','Bed','Admitting Physician','Attending Physician',
+                    'Adm Diagnosis', 'Coded Procedure'}
         self.pat_dic = {}
-        self.fields = {'Encounter Date', 'Hospital Account', 'MRN', 'Guarantor', 'Contact Serial #', 'Name', 'Address','City'}
-    # def process_block(self, text_block, fields):
-    #     self.process_pat_info(text_block['PATIENT'], fields)
-    #     self.process_start_info(text_block['<START>'], fields)
-    #     self.process_encounter_info(text_block['ENCOUNTER'], fields)
-    #     self.process_guaranter_info(text_block['GUARANTOR'], fields)
-    #     self.process_coverage_info(text_block['COVERAGE'], fields)
+        for key in self.fields:
+            for pref in block_markers:
+                if pref != '<START>':
+                    self.pat_dic[pref+ '_' + key] = np.nan
+                else:
+                    self.pat_dic[key] = np.nan
 
 
     def process_gen_info(self,text_block):
         for key, value in text_block.items():
             for line in value:
-                if any(field == line.split(':')[0] for field in self.fields) and len(line.split(':'))>1:
+                curr_line = line.strip().split(':')
+
+                if key == 'COVERAGE':
                     print (line)
+                if any(field == curr_line[0] for field in self.fields) and len(curr_line)>1 and '' not in curr_line:
+
                     if key != '<START>':
-                        self.pat_dic[key+ '_' + line.split(':')[0].strip()] = line.split(':')[1].strip()
+                        self.pat_dic[key+ '_' + curr_line[0].strip()] = curr_line[1].strip()
                     else:
-                        self.pat_dic[line.split(':')[0].strip()] = line.split(':')[1].strip()
+                        self.pat_dic[curr_line[0].strip()] = curr_line[1].strip()
 
     def process_start_info(self, text_block, fields):
         pass

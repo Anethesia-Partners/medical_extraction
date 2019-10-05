@@ -21,7 +21,7 @@ def get_patients(text_block, block_markers,breaking_phrase):
     text_block = ['<START>'] + text_block
     blocks = {x:[] for x in block_markers}
     curr_marker = ''
-    curr_patient = Patient()
+    curr_patient = Patient(block_markers=block_markers)
 
     for line in text_block:
 
@@ -31,7 +31,7 @@ def get_patients(text_block, block_markers,breaking_phrase):
             print (curr_patient.pat_dic)
             curr_marker = '<START>'
             blocks = {x:[] for x in block_markers}
-            curr_patient = Patient()
+            curr_patient = Patient(block_markers=block_markers)
 
         if line.strip() in block_markers:
                 curr_marker = line.strip()
@@ -45,8 +45,10 @@ def get_patients(text_block, block_markers,breaking_phrase):
 def compile_dataframe(patient_list):
     pat_df = pd.DataFrame()
     for patient in patient_list:
-        pat_df = pd.concat([pat_df,pd.DataFrame([patient.csv_rep()], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index()
+        pat_df = pd.concat([pat_df,pd.DataFrame([patient.csv_rep()], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index(drop=True)
+
         print(pat_df)
+    pat_df = pat_df.dropna(axis=1, how='all')
     return pat_df
 
 full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
