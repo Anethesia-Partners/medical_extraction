@@ -36,7 +36,7 @@ def get_patients(text_block, block_markers,breaking_phrase):
                 curr_marker = line.strip()
                 continue
 
-        blocks[curr_marker].append(line)
+        blocks[curr_marker].append(line.lower())
     curr_patient.process_gen_info(blocks)
     return patient_list
 
