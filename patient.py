@@ -1,13 +1,19 @@
 import numpy as np
 import re
+import os
+import googlemaps
+import usaddress
 
 class Patient:
     def __init__(self,block_markers):
+
         self.fields = {'encounter date', 'hospital account', 'mrn', 'guarantor', 'contact serial #', 'name', 'address','city',
                     'primary care provider','dob','sex','race','primary phone','relation to patient','guarantor id','guarantor employer',
                     'status','home phone','patient class','hospital service','unit','bed','admitting physician','attending physician',
                     'adm diagnosis', 'coded procedure'}
         self.pat_dic = {}
+        self.g_map_client = googlemaps.Client(os.getenv("GOOGLE_GEOCODING_KEY"))
+
         self.update_keys(block_markers)
 
 
@@ -33,7 +39,7 @@ class Patient:
                 continue
 
             blocks[curr_marker].append(line)
-        print(blocks)
+        # print(blocks)
 
         self.get_address(text_block)
         for key,value in blocks.items():
@@ -53,9 +59,13 @@ class Patient:
     def get_address(self,text_block):
         block_string = ' '.join(text_block)
         po_pattern = re.compile(r'(po box)\s*\d+')
-        # add_pattern = re.compile(r'^(.+)[,\\s]+(.+?)\s*(\d{5})?$')
+        add_pattern = re.compile(r'([A-Z,a-z][^.!\-:;]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
         po_box = re.search(po_pattern, block_string)
-        # address = re.search(add_pattern, block_string)
+        address = re.findall(add_pattern, block_string)
+        for matches in address:
+            tags = usaddress.tag(' '.join(matches))[0]
+            if 'PlaceName' in tags.keys() and 'StateName' in tags.keys():
+                print(tags)
         print(po_box)
 
 
