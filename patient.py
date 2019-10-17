@@ -59,7 +59,7 @@ class Patient:
     def get_address(self,text_block):
         block_string = ' '.join(text_block)
         po_pattern = re.compile(r'(po box)\s*\d+')
-        add_pattern = re.compile(r'([A-Z,a-z][^.!\-:;]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
+        add_pattern = re.compile(r'([A-Z,a-z,0-9][^.!\-:;,\s]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
         po_box = re.search(po_pattern, block_string)
         address = re.findall(add_pattern, block_string)
         for matches in address:
