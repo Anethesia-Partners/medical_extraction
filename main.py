@@ -37,7 +37,9 @@ def get_patients(text_block, block_markers,breaking_phrase):
                 continue
 
         blocks[curr_marker].append(line)
+
     curr_patient.process_gen_info(blocks)
+    patient_list.append(curr_patient)
     return patient_list
 
 def compile_dataframe(patient_list):
@@ -45,7 +47,7 @@ def compile_dataframe(patient_list):
     for patient in patient_list:
         pat_df = pd.concat([pat_df,pd.DataFrame([patient.csv_rep()], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index(drop=True)
     pat_df = pat_df.dropna(axis=1, how='all')
-    return pat_df
+    return pat_df.iloc[1:]
 
 full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 

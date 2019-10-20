@@ -39,12 +39,15 @@ def convert_pdf(file_path, output_path=None):
     merged_image.save(output_path, 'JPEG')
     return merged_image
 
-data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
-file_name = 'MOLINE FACESHEETS -2'
 
-image = convert_pdf(data_path + file_name+'.pdf', data_path + file_name+'.jpg')
+if __name__ == '__main__':
 
-client = storage.Client(project='medical-extraction')
-bucket = client.get_bucket('report-ap')
-blob = bucket.blob('test_image.jpg')
-blob.upload_from_filename(data_path + file_name+'.jpg')
+    data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
+    file_name = 'BARNEY SORT#732_21580'
+
+    image = convert_pdf(data_path + file_name+'.pdf', data_path + file_name+'.jpg')
+
+    client = storage.Client(project='medical-extraction')
+    bucket = client.get_bucket('report-ap')
+    blob = bucket.blob('test_image.jpg')
+    blob.upload_from_filename(data_path + file_name+'.jpg')
