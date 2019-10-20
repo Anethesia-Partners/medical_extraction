@@ -75,8 +75,6 @@ class Patient:
             except:
                 print('Error!....')
 
-
-
     def update_keys(self,block_markers):
         for key in self.fields:
             for pref in block_markers:
@@ -87,11 +85,18 @@ class Patient:
 
     def get_insurance_medcode(self):
         for cov_block in self.coverage_blocks:
-            print (self.pat_dic[cov_block+ '_' + 'po_box'],self.pat_dic[cov_block + '_' + 'address'])
+            print (cov_block, self.pat_dic[cov_block+ '_' + 'po_box'],self.pat_dic[cov_block + '_' + 'address'])
             if self.pat_dic[cov_block + '_' + 'address'] != None and self.pat_dic[cov_block+ '_' + 'po_box'] != None:
                 tags_add = usaddress.tag(self.pat_dic[cov_block + '_' + 'address'])[0]
-                print(self.insurance_df[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) & (self.insurance_df['City'] == tags_add['PlaceName'].upper()) & (self.insurance_df['St'] == tags_add['StateName'].upper())])
-
-
+                companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) &
+                (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
+                (self.insurance_df['St'] == tags_add['StateName'].upper())]
+                if not companies_df.empty:
+                    self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+                else:
+                    self.pat_dic[cov_block + "_mednetcode"] = None
+            else:
+                self.pat_dic[cov_block + "_mednetcode"] = None
+                # print(self.pat_dic[cov_block + "_mednetcode"])
     def csv_rep(self):
         return self.pat_dic
