@@ -43,7 +43,7 @@ def convert_pdf(file_path, output_path=None):
 if __name__ == '__main__':
 
     data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
-    file_name = 'BARNEY SORT#732_21580'
+    file_name = 'MOLINE FACESHEETS -2'
 
     image = convert_pdf(data_path + file_name+'.pdf', data_path + file_name+'.jpg')
 

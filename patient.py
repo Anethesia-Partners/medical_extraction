@@ -4,6 +4,7 @@ import os
 import googlemaps
 import usaddress
 import pandas as pd
+import nltk
 
 class Patient:
     def __init__(self,block_markers):
@@ -14,6 +15,8 @@ class Patient:
                         'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit'}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('./Insurance Companies.xlsx')
+        self.insurance_alias = {'uhc':'united healthcare',}
+
         self.update_keys(block_markers)
 
 
@@ -57,6 +60,7 @@ class Patient:
                 else:
                     self.pat_dic[curr_line[0].strip()] = curr_line[1].strip()
 
+
     def get_address(self,text_block,key):
         block_string = ' '.join(text_block).lower()
         po_pattern = re.compile(r'(po box)\s*\d+')
@@ -91,8 +95,20 @@ class Patient:
                 companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) &
                 (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
                 (self.insurance_df['St'] == tags_add['StateName'].upper())]
+
                 if not companies_df.empty:
-                    self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+                    if len(companies_df.index) > 1 and self.pat_dic[cov_block + "_payor"] != None:
+                        min_dis = (0,10000)
+                        company_payor = self.pat_dic[cov_block + "_payor"]
+                        for word, replacement in self.insurance_alias.items():
+                            company_payor = company_payor.replace(word, replacement)
+
+                        for index, row in companies_df.iterrows():
+                            min_dis = min((index,nltk.edit_distance(company_payor, row["Insurance Company Name"])) , min_dis, key=lambda x: x[1])
+                        print(companies_df[companies_df.index == min_dis[0]])
+                    else:
+                        self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+
                 else:
                     self.pat_dic[cov_block + "_mednetcode"] = None
             else:
