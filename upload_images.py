@@ -49,5 +49,5 @@ if __name__ == '__main__':
 
     client = storage.Client(project='medical-extraction')
     bucket = client.get_bucket('report-ap')
-    blob = bucket.blob('test_image.jpg')
+    blob = bucket.blob("face_sheet_images/" + file_name + '.jpg')
     blob.upload_from_filename(data_path + file_name+'.jpg')

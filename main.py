@@ -1,13 +1,14 @@
 import argparse
 from enum import Enum
 import io
+from gcloud import storage
 from google.cloud import vision
 from google.cloud.vision import types
 from PIL import Image, ImageDraw
 import os
 import tempfile
 from pdf2image import convert_from_path, convert_from_bytes
-from request_handling import get_text
+from request_handling import get_text, get_all_text
 from patient import Patient
 import re
 import pandas as pd
@@ -26,6 +27,9 @@ def get_patients(text_block, block_markers,breaking_phrase):
     for line in text_block:
 
         if breaking_phrase in line.strip():
+            for key,val in blocks.items():
+                print("\n\n" + key)
+                print(val)
             curr_patient.process_gen_info(blocks)
             patient_list.append(curr_patient)
             curr_marker = '<START>'
@@ -49,8 +53,9 @@ def compile_dataframe(patient_list):
     pat_df = pat_df.dropna(axis=1, how='all')
     return pat_df.iloc[1:]
 
-full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
+# full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 
+full_body = get_all_text("report-ap","face_sheet_images")
 record = []
 pat_fl = 0
 nam_nl = 0

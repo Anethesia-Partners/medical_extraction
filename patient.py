@@ -6,6 +6,14 @@ import usaddress
 import pandas as pd
 import nltk
 
+US_STATES = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
+          "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+          "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+          "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+          "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"}
+
+US_CITY_CORRECTS = {"st louis":"saint louis"}
+
 class Patient:
     def __init__(self,block_markers):
 
@@ -17,12 +25,13 @@ class Patient:
         self.insurance_df = pd.read_excel('./Insurance Companies.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
 
+
         self.update_keys(block_markers)
 
 
     def process_gen_info(self,text_block):
         for key, value in text_block.items():
-
+            # print (key, value)
             if key == 'COVERAGE':
                 self.process_coverage_info(value)
             else:
@@ -36,8 +45,8 @@ class Patient:
         curr_marker = ''
 
         for line in text_block:
-            if line.strip() in self.coverage_blocks:
-                    curr_marker = line.strip()
+            if any(nltk.edit_distance(line.strip(),x)<3 for x in self.coverage_blocks):
+                    curr_marker = min([(x, nltk.edit_distance(line.strip(),x)) for x in self.coverage_blocks], key = lambda x: x[1])[0]
                     continue
             elif curr_marker == '':
                 continue
@@ -46,6 +55,8 @@ class Patient:
 
         for key,value in blocks.items():
             self.process_coloned(value,key)
+            print("\n" + key)
+            print(value)
             self.get_address(value,key)
 
 
@@ -70,10 +81,11 @@ class Patient:
 
         add_pattern = re.compile(r'([A-Z,a-z,0-9][^.!\-:;,\s]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
         address = re.findall(add_pattern, block_string)
+        print(address)
         for matches in address:
             try:
                 tags = usaddress.tag(' '.join(matches))[0]
-                if 'PlaceName' in tags.keys() and 'StateName' in tags.keys():
+                if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
                     self.pat_dic[key+ '_' + 'address'] = ' '.join(matches)
 
             except:
@@ -92,22 +104,36 @@ class Patient:
             print (cov_block, self.pat_dic[cov_block+ '_' + 'po_box'],self.pat_dic[cov_block + '_' + 'address'])
             if self.pat_dic[cov_block + '_' + 'address'] != None and self.pat_dic[cov_block+ '_' + 'po_box'] != None:
                 tags_add = usaddress.tag(self.pat_dic[cov_block + '_' + 'address'])[0]
+
+                for word, replacement in US_CITY_CORRECTS.items():
+                    tags_add['PlaceName'] = tags_add['PlaceName'].replace(word, replacement)
+
+                print(tags_add)
+
                 companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) &
                 (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
                 (self.insurance_df['St'] == tags_add['StateName'].upper())]
 
                 if not companies_df.empty:
+
+                    print(companies_df)
                     if len(companies_df.index) > 1 and self.pat_dic[cov_block + "_payor"] != None:
+                        print(self.pat_dic[cov_block + "_payor"])
                         min_dis = (0,10000)
                         company_payor = self.pat_dic[cov_block + "_payor"]
+
                         for word, replacement in self.insurance_alias.items():
                             company_payor = company_payor.replace(word, replacement)
 
                         for index, row in companies_df.iterrows():
-                            min_dis = min((index,nltk.edit_distance(company_payor, row["Insurance Company Name"])) , min_dis, key=lambda x: x[1])
-                        print(companies_df[companies_df.index == min_dis[0]])
+                            min_dis = min((index,nltk.edit_distance(company_payor, row["Insurance Company Name"].lower())) , min_dis, key=lambda x: x[1])
+
+                        self.pat_dic[cov_block + "_mednetcode"] = companies_df[companies_df.index == min_dis[0]]['MedNetCode'].item()
+
+                        print("MULTIPLE",companies_df[companies_df.index == min_dis[0]]['Insurance Company Name'])
                     else:
                         self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+
 
                 else:
                     self.pat_dic[cov_block + "_mednetcode"] = None
