@@ -51,6 +51,11 @@ def compile_dataframe(patient_list):
     for patient in patient_list:
         pat_df = pd.concat([pat_df,pd.DataFrame([patient.csv_rep()], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index(drop=True)
     pat_df = pat_df.dropna(axis=1, how='all')
+
+    dob_cols = [col for col in pat_df.columns if 'dob' in col]
+    print("DOB COLS:", dob_cols)
+    for col in dob_cols:
+        pat_df[col] = pat_df[col].apply(lambda x:  x.split(" ")[0] if (x != None) else x)
     return pat_df.iloc[1:]
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()

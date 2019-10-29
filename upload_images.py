@@ -8,12 +8,25 @@ from PIL import Image, ImageDraw
 import os
 import tempfile
 from pdf2image import convert_from_path, convert_from_bytes
+import pdf2image
 
 def convert_pdf(file_path, output_path=None):
+    print(file_path)
+    if ".png" in file_path:
+        png = Image.open(file_path)
+        png.load() # required for png.split()
+
+        background = Image.new("RGB", png.size, (255, 255, 255))
+        background.paste(png, mask=png.split()[3]) # 3 is the alpha channel
+
+        background.save(output_path, 'JPEG', quality=80)
+        return background
     # save temp image files in temp dir, delete them after we are finished
     with tempfile.TemporaryDirectory() as temp_dir:
         # convert pdf to multiple image
+
         images = convert_from_path(file_path, output_folder=temp_dir)
+
         # save images to temporary directory
         temp_images = []
         for i in range(len(images)):
@@ -42,12 +55,17 @@ def convert_pdf(file_path, output_path=None):
 
 if __name__ == '__main__':
 
-    data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
-    file_name = 'MOLINE FACESHEETS -2'
-
-    image = convert_pdf(data_path + file_name+'.pdf', data_path + file_name+'.jpg')
+    # data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
+    data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/XWP - ARCHANA WAGLE PC/'
 
     client = storage.Client(project='medical-extraction')
     bucket = client.get_bucket('report-ap')
-    blob = bucket.blob("face_sheet_images/" + file_name + '.jpg')
-    blob.upload_from_filename(data_path + file_name+'.jpg')
+
+    for file_name in os.listdir(data_path):
+        if file_name != ".DS_Store" and file_name != "Done":
+            image_name = file_name.split('.')[0]
+
+            image = convert_pdf(data_path + file_name, data_path +"Done/"+ image_name + '.jpg')
+
+            blob = bucket.blob("face_sheet_images/" + image_name + '.jpg')
+            blob.upload_from_filename(data_path + "Done/"+ image_name+'.jpg')
