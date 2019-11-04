@@ -12,6 +12,11 @@ import pdf2image
 
 def convert_pdf(file_path, output_path=None):
     print(file_path)
+    if ".JPG" in file_path:
+        jpg = Image.open(file_path)
+        jpg.save(output_path, 'JPEG', quality=80)
+        return jpg
+
     if ".png" in file_path:
         png = Image.open(file_path)
         png.load() # required for png.split()

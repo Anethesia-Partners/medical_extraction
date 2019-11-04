@@ -5,6 +5,7 @@ import googlemaps
 import usaddress
 import pandas as pd
 import nltk
+import sys
 
 US_STATES = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
           "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -34,6 +35,10 @@ class Patient:
             # print (key, value)
             if key == 'COVERAGE':
                 self.process_coverage_info(value)
+            elif key == '<START>':
+                self.pat_dic['START_name'] = value[0]
+                print("START ADDRESS:\n")
+                self.get_address(value,'START')
             else:
                 self.process_coloned(value,key)
         self.get_insurance_medcode()
@@ -80,16 +85,36 @@ class Patient:
             self.pat_dic[key+ '_' + 'po_box'] = po_box[0].split()[-1]
 
         add_pattern = re.compile(r'([A-Z,a-z,0-9][^.!\-:;,\s]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
-        address = re.findall(add_pattern, block_string)
-        print(address)
-        for matches in address:
-            try:
-                tags = usaddress.tag(' '.join(matches))[0]
-                if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
-                    self.pat_dic[key+ '_' + 'address'] = ' '.join(matches)
 
-            except:
-                print('Error!....')
+        addresses = []
+
+        for line in text_block:
+            addresses.append(re.findall(add_pattern, line.lower()))
+
+        print(addresses, streets)
+        for matches in addresses:
+            if len(matches) > 0:
+                try:
+                    tags = usaddress.tag(' '.join(matches[0]))[0]
+                    if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
+                        self.pat_dic[key+ '_' + 'address'] = ' '.join(matches[0])
+
+                except:
+                    print ("Unexpected error:", sys.exc_info()[0])
+
+        for matches in text_block:
+            if len(matches) > 0:
+                try:
+                    main_tags = usaddress.tag(matches.lower())
+                    tags = main_tags[0]
+                    if len(main_tags) > 0:
+                        if "StreetName" in tags.keys() and "AddressNumber" in tags.keys() and main_tags[1] == 'Street Address' and ('SubaddressType' not in tags.keys() and 'Recipient' not in tags.keys()):
+                            if tags["AddressNumber"].isdigit():
+                                print(tags)
+                                self.pat_dic[key+ '_' + 'street'] = matches.lower()
+
+                except:
+                    print ("Unexpected error:", sys.exc_info()[0])
 
     def update_keys(self,block_markers):
         for key in self.fields:

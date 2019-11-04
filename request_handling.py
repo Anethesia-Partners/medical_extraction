@@ -23,6 +23,8 @@ def get_all_text(bucket_name, directory):
     for blob in bucket.list_blobs(prefix=directory):
         print(blob.name)
         full_text += get_text(create_uri(bucket_name,blob.name)).full_text_annotation.text.splitlines()
-        print(full_text)
+        # print(full_text)
+        for line in full_text:
+            print (line)
 
     return full_text
