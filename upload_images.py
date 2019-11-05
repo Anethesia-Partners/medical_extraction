@@ -61,7 +61,7 @@ def convert_pdf(file_path, output_path=None):
 if __name__ == '__main__':
 
     # data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/fwdfacesheets/'
-    data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/XWP - ARCHANA WAGLE PC/'
+    data_path = '/Users/rhettd/Documents/Fall2019/MED_CONSULT/Data/CAA - CHICAGO ANESTHESIA ASSOCIATES SC/Single/'
 
     client = storage.Client(project='medical-extraction')
     bucket = client.get_bucket('report-ap')

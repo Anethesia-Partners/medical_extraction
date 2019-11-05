@@ -23,7 +23,7 @@ class Patient:
                         'home phone', 'hospital account', 'hospital service', 'mrn', 'name', 'patient class', 'payor', 'po_box', 'primary care provider',
                         'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit'}
         self.pat_dic = {}
-        self.insurance_df = pd.read_excel('./Insurance Companies.xlsx')
+        self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
 
 
@@ -91,7 +91,7 @@ class Patient:
         for line in text_block:
             addresses.append(re.findall(add_pattern, line.lower()))
 
-        print(addresses, streets)
+        print(addresses)
         for matches in addresses:
             if len(matches) > 0:
                 try:

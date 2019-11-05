@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath("../"))
+
 import argparse
 from enum import Enum
 import io
@@ -12,6 +16,7 @@ from request_handling import get_text, get_all_text
 from patient import Patient
 import re
 import pandas as pd
+import nltk
 
 
 
@@ -36,9 +41,11 @@ def get_patients(text_block, block_markers,breaking_phrase):
             blocks = {x:[] for x in block_markers}
             curr_patient = Patient(block_markers=block_markers)
 
-        if line.strip() in block_markers:
-                curr_marker = line.strip()
-                continue
+        for block_marker in block_markers:
+            if nltk.edit_distance(block_marker, line.strip())<3:
+                curr_marker = block_marker
+                break
+
 
         blocks[curr_marker].append(line)
 
@@ -59,15 +66,15 @@ def compile_dataframe(patient_list):
     return pat_df.iloc[1:]
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
-
-full_body = get_all_text("report-ap","face_sheet_images")
-record = []
-pat_fl = 0
-nam_nl = 0
-block_markers = ['<START>', 'ENCOUNTER', 'PATIENT', 'GUARANTOR', 'COVERAGE']
-breaking_phrase = 'QUAD CITIES'
-patient_list = get_patients(full_body,block_markers,breaking_phrase)
-fin_df = compile_dataframe(patient_list)
-fin_df.to_excel("./output_fin.xlsx")
-with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-    print(fin_df)
+if __name__ == "__main__":
+    full_body = get_all_text("report-ap","face_sheet_images")
+    record = []
+    pat_fl = 0
+    nam_nl = 0
+    block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SECONDARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS']
+    breaking_phrase = 'FACE'
+    patient_list = get_patients(full_body,block_markers,breaking_phrase)
+    fin_df = compile_dataframe(patient_list)
+    fin_df.to_excel("./output_fin.xlsx")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(fin_df)
