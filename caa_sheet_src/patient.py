@@ -6,6 +6,7 @@ import usaddress
 import pandas as pd
 import nltk
 import sys
+import copy
 
 US_STATES = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
           "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -18,14 +19,11 @@ US_CITY_CORRECTS = {"st louis":"saint louis"}
 class Patient:
     def __init__(self,block_markers):
 
-        self.fields = {'address', 'adm diagnosis', 'admitting physician', 'attending physician', 'bed', 'city',
-                        'coded procedure', 'contact serial #', 'dob', 'encounter date', 'guarantor', 'guarantor employer', 'guarantor id',
-                        'home phone', 'hospital account', 'hospital service', 'mrn', 'name', 'patient class', 'payor', 'po_box', 'primary care provider',
-                        'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit'}
+        self.fields = {"SEX", "AGE", "DOB", "PRI PHONE", "ALT PHONE", "EMAIL"}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
-
+        self.sheet_name = "Advocate Illinois Masonic Medical Center"
 
         self.update_keys(block_markers)
 
@@ -33,37 +31,15 @@ class Patient:
     def process_gen_info(self,text_block):
         for key, value in text_block.items():
             # print (key, value)
-            if key == 'COVERAGE':
-                self.process_coverage_info(value)
-            elif key == '<START>':
-                self.pat_dic['START_name'] = value[0]
+
+            if key == '<START>':
+                self.pat_dic['START_name'] = self.sheet_name
+
                 print("START ADDRESS:\n")
                 self.get_address(value,'START')
-            else:
-                self.process_coloned(value,key)
-        self.get_insurance_medcode()
-
-    def process_coverage_info(self, text_block):
-        self.coverage_blocks = {'PRIMARY INSURANCE', 'SECONDARY INSURANCE'}
-        self.update_keys(self.coverage_blocks)
-        blocks = {x:[] for x in self.coverage_blocks}
-        curr_marker = ''
-
-        for line in text_block:
-            if any(nltk.edit_distance(line.strip(),x)<3 for x in self.coverage_blocks):
-                    curr_marker = min([(x, nltk.edit_distance(line.strip(),x)) for x in self.coverage_blocks], key = lambda x: x[1])[0]
-                    continue
-            elif curr_marker == '':
-                continue
-
-            blocks[curr_marker].append(line)
-
-        for key,value in blocks.items():
-            self.process_coloned(value,key)
-            print("\n" + key)
-            print(value)
-            self.get_address(value,key)
-
+            elif key == 'PATIENT NAME/ADDRESS':
+                self.process_spaced(value,key)
+        # self.get_insurance_medcode()
 
 
     def process_coloned(self,text_block,key):
@@ -76,6 +52,29 @@ class Patient:
                 else:
                     self.pat_dic[curr_line[0].strip()] = curr_line[1].strip()
 
+    def process_spaced(self,text_block,key):
+        for line in text_block:
+            curr_line = copy.deepcopy(line)
+
+            while len(curr_line.split())>1:
+                print(curr_line)
+                if any(field in curr_line for field in self.fields):
+                    for field in self.fields:
+                        if field in curr_line:
+                            val_start = curr_line.find(field) + len(field)
+                            if val_start < len(curr_line):
+                                field_val = curr_line[val_start:].split()[0]
+                                self.pat_dic[key + '_' + field] = field_val
+                                curr_line = curr_line[(curr_line.find(field_val) + len(field_val) + 1):]
+                            else:
+                                field_val = ""
+                                curr_line = ""
+                else:
+                    field_val = ""
+                    curr_line = ""
+
+
+        print(self.pat_dic)
 
     def get_address(self,text_block,key):
         block_string = ' '.join(text_block).lower()
