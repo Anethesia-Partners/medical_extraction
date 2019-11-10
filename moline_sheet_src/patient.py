@@ -36,7 +36,10 @@ class Patient:
             if key == 'COVERAGE':
                 self.process_coverage_info(value)
             elif key == '<START>':
-                self.pat_dic['START_name'] = value[0]
+                try:
+                    self.pat_dic['START_name'] = value[0]
+                except:
+                    print("No Start Name")
                 print("START ADDRESS:\n")
                 self.get_address(value,'START')
             else:
@@ -84,7 +87,7 @@ class Patient:
         if po_box != None:
             self.pat_dic[key+ '_' + 'po_box'] = po_box[0].split()[-1]
 
-        add_pattern = re.compile(r'([A-Z,a-z,0-9][^.!\-:;,\s]+)[,|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
+        add_pattern = re.compile(r'([A-Z,a-z,0-9][^.!\-:;,\s]+)[,.|\s]+([A-Z,a-z][^.!\-:;]+?)\s*(\d{5})')
 
         addresses = []
 
@@ -98,6 +101,9 @@ class Patient:
                     tags = usaddress.tag(' '.join(matches[0]))[0]
                     if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
                         self.pat_dic[key+ '_' + 'address'] = ' '.join(matches[0])
+                        self.pat_dic[key+'_' + 'PlaceName'] = tags['PlaceName']
+                        self.pat_dic[key+'_' + 'StateName'] = tags['StateName']
+
 
                 except:
                     print ("Unexpected error:", sys.exc_info()[0])

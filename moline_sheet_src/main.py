@@ -5,14 +5,11 @@ sys.path.append(os.path.abspath("../"))
 import argparse
 from enum import Enum
 import io
-from gcloud import storage
-from google.cloud import vision
-from google.cloud.vision import types
 from PIL import Image, ImageDraw
 import os
 import tempfile
 from pdf2image import convert_from_path, convert_from_bytes
-from request_handling import get_text, get_all_text
+from request_handling_aws import get_text, get_all_text
 from patient import Patient
 import re
 import pandas as pd
@@ -64,7 +61,8 @@ def compile_dataframe(patient_list):
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 if __name__ == "__main__":
-    full_body = get_all_text("report-ap","face_sheet_images")
+    full_body = get_all_text("facesheet-ap","face_sheet_images")
+    print(full_body)
     record = []
     pat_fl = 0
     nam_nl = 0
