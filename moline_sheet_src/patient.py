@@ -21,7 +21,7 @@ class Patient:
         self.fields = {'address', 'adm diagnosis', 'admitting physician', 'attending physician', 'bed', 'city',
                         'coded procedure', 'contact serial #', 'dob', 'encounter date', 'guarantor', 'guarantor employer', 'guarantor id',
                         'home phone', 'hospital account', 'hospital service', 'mrn', 'name', 'patient class', 'payor', 'po_box', 'primary care provider',
-                        'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit'}
+                        'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit', 'street','PlaceName', 'StateName', 'ZipCode'}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
@@ -42,6 +42,7 @@ class Patient:
                     print("No Start Name")
                 print("START ADDRESS:\n")
                 self.get_address(value,'START')
+                self.process_coloned(value,key)
             else:
                 self.process_coloned(value,key)
         self.get_insurance_medcode()
@@ -99,12 +100,12 @@ class Patient:
         for matches in addresses:
             if len(matches) > 0:
                 try:
-                    tags = usaddress.tag(' '.join(matches[0]))[0]
+                    tags = usaddress.tag(' '.join(matches[0]).replace('.',''))[0]
                     if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
                         self.pat_dic[key+ '_' + 'address'] = ' '.join(matches[0]).replace('.','')
                         self.pat_dic[key+'_' + 'PlaceName'] = tags['PlaceName']
                         self.pat_dic[key+'_' + 'StateName'] = tags['StateName']
-
+                        self.pat_dic[key+'_' + 'ZipCode'] = tags['ZipCode']
 
                 except:
                     print ("Unexpected error:", sys.exc_info()[0])
@@ -134,17 +135,22 @@ class Patient:
     def get_insurance_medcode(self):
         for cov_block in self.coverage_blocks:
             print (cov_block, self.pat_dic[cov_block+ '_' + 'po_box'],self.pat_dic[cov_block + '_' + 'address'])
-            if self.pat_dic[cov_block + '_' + 'address'] != None and self.pat_dic[cov_block+ '_' + 'po_box'] != None:
+            if self.pat_dic[cov_block + '_' + 'address'] != None and (self.pat_dic[cov_block+ '_' + 'po_box'] != None or self.pat_dic[cov_block+ '_' + 'street'] != None):
+
                 tags_add = usaddress.tag(self.pat_dic[cov_block + '_' + 'address'])[0]
 
                 for word, replacement in US_CITY_CORRECTS.items():
                     tags_add['PlaceName'] = tags_add['PlaceName'].replace(word, replacement)
 
                 print(tags_add)
-
-                companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) &
-                (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
-                (self.insurance_df['St'] == tags_add['StateName'].upper())]
+                if self.pat_dic[cov_block+ '_' + 'po_box'] != None:
+                    companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == "PO BOX " + self.pat_dic[cov_block + '_' + 'po_box']) &
+                    (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
+                    (self.insurance_df['St'] == tags_add['StateName'].upper())]
+                elif self.pat_dic[cov_block+ '_' + 'street'] != None:
+                    companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == self.pat_dic[cov_block + '_' + 'street'].upper()) &
+                    (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
+                    (self.insurance_df['St'] == tags_add['StateName'].upper())]
 
                 if not companies_df.empty:
 

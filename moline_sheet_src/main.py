@@ -37,9 +37,16 @@ def get_patients(text_block, block_markers,breaking_phrase):
             blocks = {x:[] for x in block_markers}
             curr_patient = Patient(block_markers=block_markers)
 
-        if line.strip() in block_markers:
-                curr_marker = line.strip()
-                continue
+
+        marker_change = 0
+        for block_marker in block_markers:
+            if block_marker in line.strip():
+                    curr_marker = block_marker
+                    marker_change = 1
+                    break
+
+        if marker_change == 1:
+            continue
 
         blocks[curr_marker].append(line)
 

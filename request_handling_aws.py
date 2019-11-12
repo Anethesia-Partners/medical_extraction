@@ -4,8 +4,6 @@ import boto3
 
 
 # https://facesheet-ap.s3.amazonaws.com/000a5953-9b4a-4abd-9002-a1347ba949e2.png
-def create_uri(bucket_name, blob_name):
-    return "gs://" + bucket_name + "/" + blob_name
 
 def get_text(bucket_name, key):
     client_text = boto3.client('textract')
