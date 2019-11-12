@@ -68,7 +68,7 @@ def compile_dataframe(patient_list):
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 if __name__ == "__main__":
-    full_body = get_all_text("facesheet-ap","face_sheet_images")
+    full_body = get_all_text("facesheet-ap","facesheet_moline/")
     print(full_body)
     record = []
     pat_fl = 0

@@ -7,6 +7,7 @@ import pandas as pd
 import nltk
 import sys
 import copy
+import request_handling_aws
 
 US_STATES = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
           "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -19,7 +20,7 @@ US_CITY_CORRECTS = {"st louis":"saint louis"}
 class Patient:
     def __init__(self,block_markers):
 
-        self.fields = {"SEX", "AGE", "DOB", "PRI PHONE", "ALT PHONE", "EMAIL"}
+        self.fields = {"SEX", "AGE", "DOB", "PRI PHONE", "ALT PHONE", "EMAIL", "ADDRESS", "NAME"}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
@@ -31,15 +32,18 @@ class Patient:
     def process_gen_info(self,text_block):
         for key, value in text_block.items():
             # print (key, value)
+            if len(value) > 1:
+                if key == '<START>':
+                    self.pat_dic['START_name'] = self.sheet_name
 
-            if key == '<START>':
-                self.pat_dic['START_name'] = self.sheet_name
+                    print("START ADDRESS:\n")
+                    self.get_address(value,'START')
 
-                print("START ADDRESS:\n")
-                self.get_address(value,'START')
-            elif key == 'PATIENT NAME/ADDRESS':
-                self.process_spaced(value,key)
-        # self.get_insurance_medcode()
+                elif key == 'PATIENT NAME/ADDRESS':
+                    self.process_spaced(value,key)
+                    key_map = request_handling_aws.get_comprehend(value)
+                    self.process_comprehend_dic(key_map, key)
+            # self.get_insurance_medcode()
 
 
     def process_coloned(self,text_block,key):
@@ -75,6 +79,12 @@ class Patient:
 
 
         print(self.pat_dic)
+
+    def process_comprehend_dic(self, comprehend_dict, key):
+        for field in self.fields:
+            if field in comprehend_dict.keys():
+                self.pat_dic[key+ '_' + field] = comprehend_dict[field]
+        print(comprehend_dict)
 
     def get_address(self,text_block,key):
         block_string = ' '.join(text_block).lower()

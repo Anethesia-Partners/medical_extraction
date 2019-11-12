@@ -15,20 +15,29 @@ def get_text(bucket_name, key):
     return doc_text
 
 def get_all_text(bucket_name, directory):
-    prefix = "facesheet_moline/"
     client_s3 = boto3.client('s3')
-    bucket_list = client_s3.list_objects_v2(Bucket = bucket_name, Prefix=prefix)
+    bucket_list = client_s3.list_objects_v2(Bucket = bucket_name, Prefix=directory)
     full_text = []
     # print(bucket)
     for blob in bucket_list['Contents']:
-        if blob['Key'] != prefix:
+        if blob['Key'] != directory:
             print("----------------------" + blob['Key'] + "---------------------------")
             next_doc = get_text(bucket_name,blob['Key'])
             print(next_doc)
 
             full_text += next_doc
             # print(full_text)
-            # for line in next_doc:
-            #     print (line)
+            for line in next_doc:
+                print (line)
 
     return full_text
+
+def get_comprehend(text_block):
+    
+    med_comp_client = boto3.client("comprehendmedical")
+    detection_map = med_comp_client.detect_entities_v2(Text='\n'.join(text_block))
+    out_map = {}
+    for entity in detection_map["Entities"]:
+        out_map[entity['Type']] = entity['Text']
+
+    return out_map

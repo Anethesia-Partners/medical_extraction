@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 import os
 import tempfile
 from pdf2image import convert_from_path, convert_from_bytes
-from request_handling import get_text, get_all_text
+from request_handling_aws import get_text, get_all_text
 from patient import Patient
 import re
 import pandas as pd
@@ -51,7 +51,7 @@ def get_patients(text_block, block_markers,breaking_phrase):
             continue
 
         blocks[curr_marker].append(line)
-
+    print(blocks)
     curr_patient.process_gen_info(blocks)
     patient_list.append(curr_patient)
     return patient_list
@@ -70,12 +70,12 @@ def compile_dataframe(patient_list):
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 if __name__ == "__main__":
-    full_body = get_all_text("report-ap","face_sheet_images")
+    full_body = get_all_text("facesheet-ap","facesheet_caa/")
     record = []
     pat_fl = 0
     nam_nl = 0
     block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SECONDARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS', 'EMPLOYER NAME/ADDRESS']
-    breaking_phrase = 'FACE'
+    breaking_phrase = 'Advocate Illinois Masonic Medical Center'
     patient_list = get_patients(full_body,block_markers,breaking_phrase)
     fin_df = compile_dataframe(patient_list)
     fin_df.to_excel("./output_fin.xlsx")
