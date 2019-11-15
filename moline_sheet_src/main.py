@@ -2,13 +2,13 @@ import sys
 import os
 sys.path.append(os.path.abspath("../"))
 
-import argparse
-from enum import Enum
+# import argparse
+# from enum import Enum
 import io
-from PIL import Image, ImageDraw
+# from PIL import Image, ImageDraw
 import os
-import tempfile
-from pdf2image import convert_from_path, convert_from_bytes
+# import tempfile
+# from pdf2image import convert_from_path, convert_from_bytes
 from request_handling_aws import get_text, get_all_text
 from patient import Patient
 import re
@@ -57,7 +57,8 @@ def get_patients(text_block, block_markers,breaking_phrase):
 def compile_dataframe(patient_list):
     pat_df = pd.DataFrame()
     for patient in patient_list:
-        pat_df = pd.concat([pat_df,pd.DataFrame([patient.csv_rep()], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index(drop=True)
+        to_concat_df = patient.csv_rep()
+        pat_df = pd.concat([pat_df,pd.DataFrame([to_concat_df], columns=patient.csv_rep().keys())],axis=0,join='outer').reset_index(drop=True)
     pat_df = pat_df.dropna(axis=1, how='all')
 
     dob_cols = [col for col in pat_df.columns if 'dob' in col]
@@ -66,9 +67,9 @@ def compile_dataframe(patient_list):
         pat_df[col] = pat_df[col].apply(lambda x:  x.split(" ")[0] if (x != None) else x)
     return pat_df.iloc[1:]
 
-# full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
+
 if __name__ == "__main__":
-    full_body = get_all_text("facesheet-ap","facesheet_moline/")
+    full_body, ids = get_all_text("facesheet-ap","facesheet_moline/")
     print(full_body)
     record = []
     pat_fl = 0

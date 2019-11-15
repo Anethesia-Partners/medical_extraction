@@ -1,7 +1,6 @@
 import numpy as np
 import re
 import os
-import googlemaps
 import usaddress
 import pandas as pd
 import nltk
@@ -23,7 +22,7 @@ class Patient:
                         'home phone', 'hospital account', 'hospital service', 'mrn', 'name', 'patient class', 'payor', 'po_box', 'primary care provider',
                         'primary phone', 'race', 'relation to patient', 'sex', 'status', 'unit', 'street','PlaceName', 'StateName', 'ZipCode'}
         self.pat_dic = {}
-        self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
+        self.insurance_df = pd.read_excel('./Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
 
 

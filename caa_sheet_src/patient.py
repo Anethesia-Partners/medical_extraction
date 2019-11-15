@@ -1,7 +1,6 @@
 import numpy as np
 import re
 import os
-import googlemaps
 import usaddress
 import pandas as pd
 import nltk
@@ -22,7 +21,7 @@ class Patient:
 
         self.fields = {"SEX", "AGE", "DOB", "PRI PHONE", "ALT PHONE", "EMAIL", "ADDRESS", "NAME"}
         self.pat_dic = {}
-        self.insurance_df = pd.read_excel('../Insurance Companies_Updated.xlsx')
+        self.insurance_df = pd.read_excel('./Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
         self.sheet_name = "Advocate Illinois Masonic Medical Center"
 
