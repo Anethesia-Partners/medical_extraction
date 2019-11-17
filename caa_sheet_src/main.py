@@ -51,7 +51,9 @@ def get_patients(text_block, block_markers,breaking_phrase):
             continue
 
         blocks[curr_marker].append(line)
-    print(blocks)
+    for key,val in blocks.items():
+        print("\n\n" + key)
+        print(val)
     curr_patient.process_gen_info(blocks)
     patient_list.append(curr_patient)
     return patient_list
@@ -64,17 +66,18 @@ def compile_dataframe(patient_list):
 
     dob_cols = [col for col in pat_df.columns if 'dob' in col]
     print("DOB COLS:", dob_cols)
+    print(pat_df)
     for col in dob_cols:
-        pat_df[col] = pat_df[col].apply(lambda x:  x.split(" ")[0] if (x != None) else x)
+        pat_df[col] = pat_df[col].astype(str).apply(lambda x:  x.split(" ")[0] if (x != None) else x)
     return pat_df.iloc[1:]
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
 if __name__ == "__main__":
-    full_body = get_all_text("facesheet-ap","facesheet_caa/")
+    full_body, ids = get_all_text("facesheet-ap","facesheet_caa/")
     record = []
     pat_fl = 0
     nam_nl = 0
-    block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SECONDARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS', 'EMPLOYER NAME/ADDRESS']
+    block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS', 'EMPLOYER NAME/ADDRESS']
     breaking_phrase = 'Advocate Illinois Masonic Medical Center'
     patient_list = get_patients(full_body,block_markers,breaking_phrase)
     fin_df = compile_dataframe(patient_list)

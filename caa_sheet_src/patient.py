@@ -19,12 +19,12 @@ US_CITY_CORRECTS = {"st louis":"saint louis"}
 class Patient:
     def __init__(self,block_markers):
 
-        self.fields = {"SEX", "AGE", "DOB", "PRI PHONE", "ALT PHONE", "EMAIL", "ADDRESS", "NAME"}
+        self.fields = {"SEX", "AGE", "DOB", "PHONE_OR_FAX", "EMAIL", "ADDRESS", "NAME", "po_box", "address"}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('./Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
         self.sheet_name = "Advocate Illinois Masonic Medical Center"
-
+        self.coverage_blocks = {'PRIMARY PLAN NAME/ADDRESS'}
         self.update_keys(block_markers)
 
 
@@ -34,15 +34,35 @@ class Patient:
             if len(value) > 1:
                 if key == '<START>':
                     self.pat_dic['START_name'] = self.sheet_name
-
+                    block = self.clean_block(value)
                     print("START ADDRESS:\n")
                     self.get_address(value,'START')
 
                 elif key == 'PATIENT NAME/ADDRESS':
+                    # block = self.clean_block(value)
                     self.process_spaced(value,key)
                     key_map = request_handling_aws.get_comprehend(value)
                     self.process_comprehend_dic(key_map, key)
-            # self.get_insurance_medcode()
+                    self.get_address(value, key)
+
+                elif key == 'PRIMARY PLAN NAME/ADDRESS':
+                    block = self.clean_block(value)
+
+                    print("PRIMARY PLAN CLEAN", block)
+                    key_map = request_handling_aws.get_comprehend(block)
+                    self.process_comprehend_dic(key_map, key)
+                    self.get_address(block,key)
+
+                elif key == 'SUBSCRIBER NAME/ADDRESS':
+                    block = self.clean_block(value)
+
+                    print("SUBSCRIBER CLEAN", block)
+                    key_map = request_handling_aws.get_comprehend(block)
+                    self.process_comprehend_dic(key_map, key)
+                    self.process_spaced(block, key)
+                    self.get_address(block,key)
+
+        self.get_insurance_medcode()
 
 
     def process_coloned(self,text_block,key):
@@ -60,14 +80,13 @@ class Patient:
             curr_line = copy.deepcopy(line)
 
             while len(curr_line.split())>1:
-                print(curr_line)
                 if any(field in curr_line for field in self.fields):
                     for field in self.fields:
                         if field in curr_line:
                             val_start = curr_line.find(field) + len(field)
                             if val_start < len(curr_line):
                                 field_val = curr_line[val_start:].split()[0]
-                                self.pat_dic[key + '_' + field] = field_val
+                                self.pat_dic[key + '_' + field.lower()] = field_val
                                 curr_line = curr_line[(curr_line.find(field_val) + len(field_val) + 1):]
                             else:
                                 field_val = ""
@@ -77,12 +96,12 @@ class Patient:
                     curr_line = ""
 
 
-        print(self.pat_dic)
-
     def process_comprehend_dic(self, comprehend_dict, key):
+        checked = set()
         for field in self.fields:
-            if field in comprehend_dict.keys():
-                self.pat_dic[key+ '_' + field] = comprehend_dict[field]
+            if field in comprehend_dict.keys() and field not in checked:
+                self.pat_dic[key+ '_' + field.lower()] = comprehend_dict[field]
+                checked.add(field)
         print(comprehend_dict)
 
     def get_address(self,text_block,key):
@@ -99,13 +118,15 @@ class Patient:
         for line in text_block:
             addresses.append(re.findall(add_pattern, line.lower()))
 
-        print(addresses)
         for matches in addresses:
             if len(matches) > 0:
                 try:
                     tags = usaddress.tag(' '.join(matches[0]))[0]
                     if 'PlaceName' in tags.keys() and 'StateName' in tags.keys() and tags['StateName'].upper() in US_STATES:
                         self.pat_dic[key+ '_' + 'address'] = ' '.join(matches[0])
+                        self.pat_dic[key+'_' + 'PlaceName'] = tags['PlaceName']
+                        self.pat_dic[key+'_' + 'StateName'] = tags['StateName']
+                        self.pat_dic[key+'_' + 'ZipCode'] = tags['ZipCode']
 
                 except:
                     print ("Unexpected error:", sys.exc_info()[0])
@@ -148,24 +169,7 @@ class Patient:
                 (self.insurance_df['St'] == tags_add['StateName'].upper())]
 
                 if not companies_df.empty:
-
-                    print(companies_df)
-                    if len(companies_df.index) > 1 and self.pat_dic[cov_block + "_payor"] != None:
-                        print(self.pat_dic[cov_block + "_payor"])
-                        min_dis = (0,10000)
-                        company_payor = self.pat_dic[cov_block + "_payor"]
-
-                        for word, replacement in self.insurance_alias.items():
-                            company_payor = company_payor.replace(word, replacement)
-
-                        for index, row in companies_df.iterrows():
-                            min_dis = min((index,nltk.edit_distance(company_payor, row["Insurance Company Name"].lower())) , min_dis, key=lambda x: x[1])
-
-                        self.pat_dic[cov_block + "_mednetcode"] = companies_df[companies_df.index == min_dis[0]]['MedNetCode'].item()
-
-                        print("MULTIPLE",companies_df[companies_df.index == min_dis[0]]['Insurance Company Name'])
-                    else:
-                        self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+                    self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
 
 
                 else:
@@ -173,5 +177,14 @@ class Patient:
             else:
                 self.pat_dic[cov_block + "_mednetcode"] = None
                 # print(self.pat_dic[cov_block + "_mednetcode"])
+
+    def clean_block(self, text_block):
+        cleaned_block = []
+        for line in text_block:
+            if len(line) > 3:
+                cleaned_block.append(line)
+        return cleaned_block
+
+
     def csv_rep(self):
         return self.pat_dic
