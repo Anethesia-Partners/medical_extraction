@@ -21,7 +21,7 @@ def get_all_text(bucket_name, directory, event_list = None):
 
     full_text = []
     ids = []
-    
+
     if event_list != None:
         for s3_item in event_list:
             next_doc, id = get_text(bucket_name, s3_item['s3']['object']['key'])
@@ -46,11 +46,12 @@ def get_all_text(bucket_name, directory, event_list = None):
 
 def get_comprehend(text_block):
     detection_map = med_comp_client.detect_entities_v2(Text='\n'.join(text_block))
-    out_map = {}
-    for entity in detection_map["Entities"]:
-        out_map[entity['Type']] = entity['Text']
+    # out_map = {}
+    # for entity in detection_map["Entities"]:
+    #     out_map[entity['Type']] = entity['Text']
 
-    return out_map
+    # return out_map
+    return detection_map["Entities"]
 
 def put_dynamo(table_name, df, ids):
     put_dict = {}

@@ -97,11 +97,23 @@ class Patient:
 
 
     def process_comprehend_dic(self, comprehend_dict, key):
-        checked = set()
-        for field in self.fields:
-            if field in comprehend_dict.keys() and field not in checked:
-                self.pat_dic[key+ '_' + field.lower()] = comprehend_dict[field]
-                checked.add(field)
+        # checked = set()
+        # for field in self.fields:
+        #     if field in comprehend_dict.keys() and field not in checked:
+        #         self.pat_dic[key+ '_' + field.lower()] = comprehend_dict[field]
+        #         checked.add(field)
+        # print(comprehend_dict)
+        types = set([entity['Type'] for entity in comprehend_dict])
+        count_map = {type:0 for type in types}
+        for entity in comprehend_dict:
+            for field in self.fields:
+                if field in entity["Type"] and count_map[entity["Type"]] == 0:
+                    self.pat_dic[key+ '_' + field.lower()] = entity["Text"]
+                    count_map[entity["Type"]] += 1
+                if field in entity["Type"] and count_map[entity["Type"]] > 0:
+                    self.pat_dic[key+ '_' + field.lower() + "_" + str(count_map[entity["Type"]])] = entity["Text"]
+                    count_map[entity["Type"]] += 1
+
         print(comprehend_dict)
 
     def get_address(self,text_block,key):
