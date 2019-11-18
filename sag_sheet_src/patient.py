@@ -20,18 +20,24 @@ TERMINOLOGY_CORRECTS = {"street": "st", "road":"rd"}
 class Patient:
     def __init__(self,block_markers):
 
-        self.fields = {"SEX", "AGE", "DOB", "PHONE_OR_FAX", "EMAIL", "ADDRESS", "NAME", "po_box", "address","street"}
+        self.fields = {"NAME", "EMAIL", "po_box", "address"}
+
+        self.form_fields = {"SEX", "AGE", "BIRTHDATE", "TELEPHONE", "EMPLOYER", "VISIT #", "PATIENT TYPE","PATIENT REPRESENTATIVE",
+                        "PRIMARY INSURANCE", "SECONDARY INSURANCE","GUARANTOR","GUARANTOR EMPLOYER", "NAME AND ADDRESS", "ADMITTED BY",
+                        "LOCATION","Ethnicity","NEXT OF KIN NAME AND ADDRESS RELATION","SERVICE", "REFERRING PHYSICIAN", "ADMITTING PHYSICIAN",
+                        "ATTENDING PHYSICIAN","PRIMARY CARE PHYSICIAN", "MEDICAL RECORD #"}
         self.pat_dic = {}
         self.insurance_df = pd.read_excel('./Insurance Companies_Updated.xlsx')
         self.insurance_alias = {'uhc':'united healthcare',}
-        self.sheet_name = "Advocate Illinois Masonic Medical Center"
-        self.coverage_blocks = {'PRIMARY PLAN NAME/ADDRESS'}
+        self.sheet_name = "SAINT ANTHONY"
+        self.coverage_blocks = {'PRIMARY INSURANCE'}
         self.update_keys(block_markers)
 
 
-    def process_gen_info(self,text_block):
+    def process_gen_info(self,text_block, form_data):
         for key, value in text_block.items():
             # print (key, value)
+
             if len(value) > 1:
                 if key == '<START>':
                     self.pat_dic['START_name'] = self.sheet_name
@@ -39,14 +45,13 @@ class Patient:
                     print("START ADDRESS:\n")
                     self.get_address(value,'START')
 
-                elif key == 'PATIENT NAME/ADDRESS':
+                elif key == 'NAME AND ADDRESS':
                     # block = self.clean_block(value)
-                    self.process_spaced(value,key)
                     key_map = request_handling_aws.get_comprehend(value)
                     self.process_comprehend_dic(key_map, key)
                     self.get_address(value, key)
 
-                elif key == 'PRIMARY PLAN NAME/ADDRESS':
+                elif key == 'PRIMARY INSURANCE':
                     block = self.clean_block(value)
 
                     print("PRIMARY PLAN CLEAN", block)
@@ -54,15 +59,20 @@ class Patient:
                     self.process_comprehend_dic(key_map, key)
                     self.get_address(block,key)
 
-                elif key == 'SUBSCRIBER NAME/ADDRESS':
+                elif key == 'EMERGENCY CONTACT NAME AND ADDRESS':
                     block = self.clean_block(value)
 
-                    print("SUBSCRIBER CLEAN", block)
                     key_map = request_handling_aws.get_comprehend(block)
                     self.process_comprehend_dic(key_map, key)
-                    self.process_spaced(block, key)
                     self.get_address(block,key)
 
+                elif key == 'GUARANTOR':
+                    block = self.clean_block(value)
+                    key_map = request_handling_aws.get_comprehend(block)
+                    self.process_comprehend_dic(key_map, key)
+                    self.get_address(block,key)
+
+        self.process_form_data(form_data)
         self.get_insurance_medcode()
 
 
@@ -107,15 +117,24 @@ class Patient:
         types = set([entity['Type'] for entity in comprehend_dict])
         count_map = {type:0 for type in types}
         for entity in comprehend_dict:
+            print(entity)
             for field in self.fields:
-                if field in entity["Type"] and count_map[entity["Type"]] == 0:
+                if field == entity["Type"] and count_map[entity["Type"]] == 0:
                     self.pat_dic[key+ '_' + field.lower()] = entity["Text"]
                     count_map[entity["Type"]] += 1
-                if field in entity["Type"] and count_map[entity["Type"]] > 0:
+                if field == entity["Type"] and count_map[entity["Type"]] > 0:
                     self.pat_dic[key+ '_' + field.lower() + "_" + str(count_map[entity["Type"]])] = entity["Text"]
                     count_map[entity["Type"]] += 1
 
         print(comprehend_dict)
+
+    def process_form_data(self, form_data):
+        count_map = {ent[0]:0 for ent in form_data}
+        for dict in form_data:
+            print(dict)
+            if dict[0] in self.form_fields:
+                print("found field: "+ dict[0])
+                self.pat_dic[dict[0]] = dict[1]
 
     def get_address(self,text_block,key):
         block_string = ' '.join(text_block).lower()
@@ -165,6 +184,12 @@ class Patient:
                     self.pat_dic[pref+ '_' + key] = None
                 else:
                     self.pat_dic[key] = None
+        for key in self.form_fields:
+            for pref in block_markers:
+                if pref != '<START>':
+                    self.pat_dic[pref+ '_' + key] = None
+                else:
+                    self.pat_dic[key] = None
 
     def get_insurance_medcode(self):
         for cov_block in self.coverage_blocks:
@@ -188,9 +213,9 @@ class Patient:
                     companies_df = self.insurance_df.loc[(self.insurance_df['Address'] == self.pat_dic[cov_block + '_' + 'street'].upper()) &
                     (self.insurance_df['City'] == tags_add['PlaceName'].upper()) &
                     (self.insurance_df['St'] == tags_add['StateName'].upper())]
-
                 if not companies_df.empty:
                     self.pat_dic[cov_block + "_mednetcode"] = companies_df.iloc[0]['MedNetCode']
+
 
                 else:
                     self.pat_dic[cov_block + "_mednetcode"] = None
