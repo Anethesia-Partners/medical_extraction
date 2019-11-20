@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath("../"))
+sys.path.append(os.path.abspath("./"))
 
 # import argparse
 # from enum import Enum
@@ -14,7 +14,8 @@ from patient import Patient
 import re
 import pandas as pd
 
-
+block_markers = ['<START>', 'ENCOUNTER', 'PATIENT', 'GUARANTOR', 'COVERAGE']
+breaking_phrase = 'QUAD CITIES'
 
 def get_patients(text_block, block_markers,breaking_phrase):
 
@@ -67,6 +68,13 @@ def compile_dataframe(patient_list):
         pat_df[col] = pat_df[col].apply(lambda x:  x.split(" ")[0] if (x != None) else x)
     return pat_df.iloc[1:]
 
+def run_pipeline(full_body, form_data=None):
+    print("RUNNING MOLINE PIPELINE........")
+    block_markers = ['<START>', 'ENCOUNTER', 'PATIENT', 'GUARANTOR', 'COVERAGE']
+    breaking_phrase = 'QUAD CITIES'
+    patient_list = get_patients(full_body,block_markers,breaking_phrase)
+    fin_df = compile_dataframe(patient_list)
+    return fin_df
 
 if __name__ == "__main__":
     full_body, ids = get_all_text("facesheet-ap","facesheet_moline/")

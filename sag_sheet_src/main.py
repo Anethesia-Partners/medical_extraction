@@ -19,6 +19,9 @@ import pandas as pd
 import nltk
 
 
+block_markers = ['<START>', 'NAME AND ADDRESS', 'EMERGENCY CONTACT NAME AND ADDRESS', 'PRIMARY INSURANCE', 'GUARANTOR', 'ADMITTING PHYSICIAN']
+breaking_phrase = 'SAINT ANTHONY'
+
 
 def get_patients(text_block, form_data, block_markers, breaking_phrase):
 
@@ -75,7 +78,14 @@ def compile_dataframe(patient_list):
         pat_df[col] = pat_df[col].astype(str).apply(lambda x:  x.split(" ")[0] if (x != None) else x)
     return pat_df
 
-# full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
+def run_pipeline(full_body, form_data=None):
+    print("RUNNING SAG PIPELINE........")
+    block_markers = ['<START>', 'NAME AND ADDRESS', 'EMERGENCY CONTACT NAME AND ADDRESS', 'PRIMARY INSURANCE', 'GUARANTOR', 'ADMITTING PHYSICIAN']
+    breaking_phrase = 'SAINT ANTHONY'
+    patient_list = get_patients(full_body, form_data, block_markers, breaking_phrase)
+    fin_df = compile_dataframe(patient_list)
+    return fin_df
+
 if __name__ == "__main__":
     full_body, ids, form_data = get_all_text("facesheet-ap","facesheet_sag/", require_form=True)
     record = []

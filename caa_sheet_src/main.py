@@ -18,7 +18,8 @@ import re
 import pandas as pd
 import nltk
 
-
+block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS', 'EMPLOYER NAME/ADDRESS']
+breaking_phrase = 'Advocate Illinois Masonic Medical Center'
 
 def get_patients(text_block, block_markers,breaking_phrase):
 
@@ -72,6 +73,14 @@ def compile_dataframe(patient_list):
     return pat_df.iloc[1:]
 
 # full_body = get_text('gs://report-ap/test_image.jpg').full_text_annotation.text.splitlines()
+def run_pipeline(full_body, form_data=None):
+    print("RUNNING CAA PIPELINE........")
+    block_markers = ['<START>', 'PATIENT NAME/ADDRESS', 'PRIMARY PLAN NAME/ADDRESS', 'SUBSCRIBER NAME/ADDRESS', 'EMPLOYER NAME/ADDRESS']
+    breaking_phrase = 'Advocate Illinois Masonic Medical Center'
+    patient_list = get_patients(full_body,block_markers,breaking_phrase)
+    fin_df = compile_dataframe(patient_list)
+    return fin_df
+
 if __name__ == "__main__":
     full_body, ids = get_all_text("facesheet-ap","facesheet_caa/")
     record = []
